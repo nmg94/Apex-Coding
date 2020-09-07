@@ -1,0 +1,22 @@
+trigger AvoidDuplicates on Contact (before insert, before update) {
+    Set<String> lEmail = new Set<String>();
+    Set<String> lMobile = new Set<String>();
+    Set<Id> lUpdatedRecordIds = new Set<Id>();
+    if(Trigger.IsUpdate)
+        lUpdatedRecordIds = trigger.newMap.keySet();
+        
+    for(Contact cnt: Trigger.New){
+        if(cnt.Email != null)
+            lEmail.add(cnt.Email);
+        
+        if(cnt.MobilePhone != null)
+            lMobile.add(cnt.MobilePhone);
+    }
+
+    if(lEmail.size() > 0 || lMobile.size() > 0){
+        List<Contact> lContactList =  [SELECT Id FROM Contact WHERE (Email IN: lEmail OR MobilePhone IN: lMobile) AND Id NOT IN: lUpdatedRecordIds];
+        if(lContactList.size() > 0){
+            trigger.new[0].addError('Duplicate Record: Record with same Email address and/or MobilePhone already exists');
+        }
+    }
+}
